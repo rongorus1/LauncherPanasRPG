@@ -1,0 +1,92 @@
+.dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--bg-2);
+  color: var(--muted);
+  box-shadow: 0 24px 64px rgba(4, 6, 14, 0.6);
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 200ms var(--ease-out),
+    transform 200ms var(--ease-out),
+    overlay 200ms allow-discrete,
+    display 200ms allow-discrete;
+}
+
+.dialog::backdrop {
+  background: rgba(6, 9, 18, 0.72);
+  opacity: 1;
+  transition:
+    opacity 200ms var(--ease-out),
+    overlay 200ms allow-discrete,
+    display 200ms allow-discrete;
+}
+
+.dialog:not([open]) {
+  opacity: 0;
+  transform: scale(0.96);
+  transition-duration: 140ms;
+}
+
+.dialog:not([open])::backdrop {
+  opacity: 0;
+}
+
+@starting-style {
+  .dialog[open] {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  .dialog[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+.body {
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.head h2 {
+  font-size: 2rem;
+}
+
+.lead {
+  margin-bottom: 8px;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    transform 140ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+
+.close:active {
+  transform: scale(0.94);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .close:hover {
+    background: var(--bg-3);
+    color: var(--ink);
+  }
+}

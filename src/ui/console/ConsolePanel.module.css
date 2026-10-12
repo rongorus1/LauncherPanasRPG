@@ -1,0 +1,143 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: rgba(10, 14, 27, 0.94);
+}
+
+.panel[data-variant="full"] {
+  height: 100%;
+  background: var(--bg-2);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 0 8px 0 4px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.panel[data-variant="full"] .bar {
+  min-height: 56px;
+  padding: 0 12px 0 20px;
+}
+
+.toggle,
+.heading {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.toggle {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--r);
+  background: transparent;
+  cursor: pointer;
+  align-items: center;
+}
+
+.caret {
+  color: var(--muted);
+  transition: transform 180ms var(--ease-out);
+}
+
+.toggle[aria-expanded="false"] .caret {
+  transform: rotate(-90deg);
+}
+
+.title {
+  color: var(--ink);
+  font: 800 1.5rem/1 var(--display);
+}
+
+.heading .title {
+  font-size: 2rem;
+}
+
+.count {
+  color: var(--muted);
+  font-family: var(--body);
+  font-weight: 400;
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.paused {
+  margin-right: 8px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.body {
+  position: relative;
+  min-height: 0;
+  flex: 1;
+}
+
+.panel[data-variant="docked"] .body {
+  height: 200px;
+  flex: none;
+}
+
+.body[hidden] {
+  display: none;
+}
+
+.list {
+  height: 100%;
+  overflow: auto;
+  padding: 10px 14px 14px;
+  font: 400 0.8125rem/1.55 var(--mono);
+  color: #c9d1e3;
+  overscroll-behavior: contain;
+}
+
+.list:focus-visible {
+  outline-offset: -3px;
+}
+
+.line {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 20px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.line[data-stream="stderr"] {
+  color: var(--danger);
+}
+
+.empty {
+  color: var(--muted);
+  font-family: var(--body);
+  font-size: 0.875rem;
+  padding: 6px 0;
+}
+
+.jump {
+  position: absolute;
+  right: 16px;
+  bottom: 12px;
+  background: var(--bg-2);
+  box-shadow: 0 6px 18px rgba(4, 6, 14, 0.5);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .toggle:hover .caret {
+    color: var(--ink);
+  }
+}

@@ -1,0 +1,23 @@
+[package]
+name = "launcher-infrastructure"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "Outbound adapters of the Panas RPG launcher: Mojang, Forge, CurseForge, Java, filesystem, process."
+
+[dependencies]
+launcher-core = { path = "../launcher-core" }
+async-trait.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls", "json", "stream", "http2", "system-proxy"] }
+futures = "0.3.34"
+sha1 = "0.11.0"
+hex = "0.4.3"
+zip = { version = "9.0.2", default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+tempfile = "3.27.0"
+wiremock = "0.6.5"

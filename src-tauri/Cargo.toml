@@ -1,0 +1,30 @@
+[package]
+name = "panas-rpg-launcher"
+version = "0.1.0"
+description = "Panas RPG offline launcher (Tauri shell: primary adapter and composition root)"
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "panas_rpg_launcher_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+launcher-core = { path = "../crates/launcher-core" }
+launcher-infrastructure = { path = "../crates/launcher-infrastructure" }
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+async-trait.workspace = true
+tokio.workspace = true
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tauri-plugin-updater = "2"

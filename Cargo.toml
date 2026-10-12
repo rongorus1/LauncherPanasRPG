@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = ["crates/launcher-core", "crates/launcher-infrastructure", "src-tauri"]
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+authors = ["GatoArtStudio"]
+
+[workspace.dependencies]
+async-trait = "0.1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "fs", "process", "io-util", "sync", "time"] }
+uuid = { version = "1", features = ["v3"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true

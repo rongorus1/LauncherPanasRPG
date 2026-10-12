@@ -1,0 +1,23 @@
+.form {
+  display: grid;
+  gap: 20px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.row input {
+  flex: 1;
+}
+
+.form[data-layout="inline"] .row input {
+  max-width: 260px;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
