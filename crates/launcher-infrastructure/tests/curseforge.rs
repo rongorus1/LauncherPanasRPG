@@ -3,7 +3,7 @@ mod common;
 use common::{http, sha1_hex, zip_bytes};
 use launcher_core::{
     application::{error::PortError, ports::outbound::PackSource},
-    domain::{ModFileRef, PackRelease, PackVersion},
+    domain::{ContentKind, ModFileRef, PackRelease, PackVersion},
 };
 use launcher_infrastructure::CurseForgePackSource;
 use serde_json::{Value, json};
@@ -252,9 +252,43 @@ impl Respond for FilesResponder {
     }
 }
 
+/// Answers `POST /mods`: project 3 is a resource pack (class 12), project 4 a shader pack (6552), the rest are mods.
+struct ProjectsResponder;
+
+impl Respond for ProjectsResponder {
+    fn respond(&self, request: &Request) -> ResponseTemplate {
+        let body: Value = serde_json::from_slice(&request.body).unwrap();
+        let data: Vec<Value> = body["modIds"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|id| {
+                let id = id.as_u64().unwrap();
+                let class_id = match id {
+                    3 => 12,
+                    4 => 6552,
+                    _ => 6,
+                };
+                json!({ "id": id, "classId": class_id })
+            })
+            .collect();
+        ResponseTemplate::new(200).set_body_json(json!({ "data": data }))
+    }
+}
+
+async fn mount_projects(server: &MockServer) {
+    Mock::given(method("POST"))
+        .and(path("/v1/mods"))
+        .and(header("x-api-key", KEY))
+        .respond_with(ProjectsResponder)
+        .mount(server)
+        .await;
+}
+
 #[tokio::test]
 async fn resolve_files_batches_requests_and_maps_hashes() {
     let server = MockServer::start().await;
+    mount_projects(&server).await;
     Mock::given(method("POST"))
         .and(path("/v1/mods/files"))
         .and(header("x-api-key", KEY))
@@ -282,11 +316,15 @@ async fn resolve_files_batches_requests_and_maps_hashes() {
         odd.download_url,
         format!("{}/cdn/files/1/1/mod 1001.jar", server.uri())
     );
+    assert_eq!(odd.kind, ContentKind::Mod);
+    assert_eq!(resolved[2].kind, ContentKind::ResourcePack);
+    assert_eq!(resolved[3].kind, ContentKind::ShaderPack);
 }
 
 #[tokio::test]
 async fn resolve_files_reports_missing_ids() {
     let server = MockServer::start().await;
+    mount_projects(&server).await;
     Mock::given(method("POST"))
         .and(path("/v1/mods/files"))
         .and(body_partial_json(json!({ "fileIds": [5, 6] })))

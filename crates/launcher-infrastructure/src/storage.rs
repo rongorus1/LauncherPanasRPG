@@ -234,8 +234,10 @@ fn prune_mods_blocking(mods: &Path, keep: &HashSet<String>) -> PortResult<()> {
     for entry in entries {
         let entry = entry.map_err(|e| from_io(e, mods))?;
         let name = entry.file_name().to_string_lossy().into_owned();
-        let is_jar = name.to_ascii_lowercase().ends_with(".jar");
-        if is_jar && !keep.contains(&name) && entry.file_type().is_ok_and(|t| t.is_file()) {
+        let lower = name.to_ascii_lowercase();
+        // Old installs left resource pack archives in `mods/`.
+        let is_mod_file = lower.ends_with(".jar") || lower.ends_with(".zip");
+        if is_mod_file && !keep.contains(&name) && entry.file_type().is_ok_and(|t| t.is_file()) {
             fs::remove_file(entry.path()).map_err(|e| from_io(e, &entry.path()))?;
         }
     }

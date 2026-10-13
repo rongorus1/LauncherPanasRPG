@@ -37,12 +37,16 @@ impl CheckPackUpdate for CheckPackUpdateUseCase {
 }
 
 /// An update is only "available" over an existing install; a missing install is shown as "install".
+/// An install made with an older layout is offered as an update so the installer can fix it.
 pub(crate) fn pack_status(
     installed: Option<&InstalledPack>,
     latest: Option<PackVersion>,
 ) -> PackStatus {
-    let update_available =
-        matches!((installed, latest), (Some(pack), Some(latest)) if latest > pack.version);
+    let update_available = match (installed, latest) {
+        (Some(pack), Some(latest)) => latest > pack.version || pack.needs_repair(),
+        (Some(pack), None) => pack.needs_repair(),
+        _ => false,
+    };
     PackStatus {
         installed_version: installed.map(|pack| pack.version.to_string()),
         minecraft_version: installed.map(|pack| pack.minecraft_version.clone()),
@@ -68,6 +72,18 @@ mod tests {
         assert_eq!(status.latest_version.as_deref(), Some("1.7.2"));
         assert_eq!(status.forge_version.as_deref(), Some("47.4.10"));
         assert!(status.update_available);
+    }
+
+    #[test]
+    fn an_install_with_an_old_layout_is_offered_as_an_update() {
+        let mut pack = FakeWorld::new()
+            .with_installed("1.7.2")
+            .installed()
+            .unwrap();
+        assert!(!pack_status(Some(&pack), Some(pack.version)).update_available);
+        pack.layout = 1;
+        assert!(pack_status(Some(&pack), Some(pack.version)).update_available);
+        assert!(pack_status(Some(&pack), None).update_available);
     }
 
     #[tokio::test]

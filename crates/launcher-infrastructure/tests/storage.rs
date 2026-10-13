@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use launcher_core::{
     application::ports::outbound::{AccountRepository, InstanceStorage, SettingsRepository},
-    domain::{InstalledPack, OfflineAccount, PackVersion, Settings, Username},
+    domain::{INSTALL_LAYOUT, InstalledPack, OfflineAccount, PackVersion, Settings, Username},
 };
 use launcher_infrastructure::{FsInstanceStorage, JsonAccountRepository, JsonSettingsRepository};
 
@@ -78,13 +78,14 @@ async fn options_from_the_pack_are_used_on_first_install() {
 }
 
 #[tokio::test]
-async fn prune_removes_only_stale_jars() {
+async fn prune_removes_stale_jars_and_misplaced_resource_packs() {
     let data = tempfile::tempdir().unwrap();
     let storage = FsInstanceStorage::new(data.path());
     let mods = storage.instance_dir().join("mods");
     for name in [
         "keep.jar",
         "stale.jar",
+        "Fresh Animations.zip",
         "notes.txt",
         "disabled.jar.disabled",
     ] {
@@ -112,6 +113,7 @@ async fn installed_pack_round_trips_and_staging_is_cleared() {
         forge_version: "47.4.10".into(),
         launch_version_id: "1.20.1-forge-47.4.10".into(),
         mod_files: vec!["a.jar".into()],
+        layout: INSTALL_LAYOUT,
     };
 
     storage.save_installed_pack(&pack).await.unwrap();

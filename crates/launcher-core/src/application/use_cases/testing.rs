@@ -16,8 +16,9 @@ use crate::application::{
     ports::outbound::*,
 };
 use crate::domain::{
-    InstalledPack, LaunchPlan, LauncherUpdate, ModFileRef, OfflineAccount, PackManifest,
-    PackRelease, PackVersion, ResolvedModFile, Settings, Username, version::VersionDescriptor,
+    ContentKind, INSTALL_LAYOUT, InstalledPack, LaunchPlan, LauncherUpdate, ModFileRef,
+    OfflineAccount, PackManifest, PackRelease, PackVersion, ResolvedModFile, Settings, Username,
+    version::VersionDescriptor,
 };
 
 const MINECRAFT: &str = "1.20.1";
@@ -81,6 +82,7 @@ impl FakeWorld {
             forge_version: FORGE.into(),
             launch_version_id: LAUNCH_ID.into(),
             mod_files: vec!["jei.jar".into()],
+            layout: INSTALL_LAYOUT,
         });
         self
     }
@@ -224,13 +226,15 @@ impl PackSource for FakeWorld {
 
     async fn resolve_files(&self, files: &[ModFileRef]) -> PortResult<Vec<ResolvedModFile>> {
         self.call("resolve_files", "")?;
-        let names = ["jei.jar", "ftb.jar"];
+        let names = ["jei.jar", "fresh-animations.zip"];
+        let kinds = [ContentKind::Mod, ContentKind::ResourcePack];
         let hashes = ["aaa", "bbb"];
         Ok(files
             .iter()
-            .zip(names.iter().zip(hashes))
-            .map(|(reference, (name, sha1))| ResolvedModFile {
+            .zip(names.iter().zip(hashes).zip(kinds))
+            .map(|(reference, ((name, sha1), kind))| ResolvedModFile {
                 reference: *reference,
+                kind,
                 file_name: (*name).into(),
                 download_url: format!("https://cdn.example/{name}"),
                 sha1: Some(sha1.into()),

@@ -15,7 +15,8 @@ pub use launch_plan_builder::{
     HostEnvironment, HostOs, LaunchInput, LaunchPaths, build_launch_plan, merge_descriptors,
 };
 pub use pack::{
-    InstalledPack, ModFileRef, PackManifest, PackRelease, PackVersion, ResolvedModFile,
+    ContentKind, INSTALL_LAYOUT, InstalledPack, ModFileRef, PackManifest, PackRelease, PackVersion,
+    ResolvedModFile,
 };
 pub use progress::{InstallStep, Progress};
 pub use settings::Settings;

@@ -86,10 +86,31 @@ pub struct ModFileRef {
     pub file_id: u64,
 }
 
-/// A mod file with everything needed to download and verify it.
+/// Kind of content a pack file is; decides the instance folder it goes to.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ContentKind {
+    #[default]
+    Mod,
+    ResourcePack,
+    ShaderPack,
+}
+
+impl ContentKind {
+    pub fn folder(self) -> &'static str {
+        match self {
+            Self::Mod => "mods",
+            Self::ResourcePack => "resourcepacks",
+            Self::ShaderPack => "shaderpacks",
+        }
+    }
+}
+
+/// A pack file with everything needed to download and verify it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ResolvedModFile {
     pub reference: ModFileRef,
+    pub kind: ContentKind,
     pub file_name: String,
     pub download_url: String,
     pub sha1: Option<String>,
@@ -106,6 +127,13 @@ pub struct PackManifest {
     pub files: Vec<ModFileRef>,
 }
 
+/// Version of the on-disk layout the installer produces. Bump it when a fix needs files re-installed.
+pub const INSTALL_LAYOUT: u32 = 2;
+
+fn legacy_layout() -> u32 {
+    1
+}
+
 /// The pack currently installed in the instance.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct InstalledPack {
@@ -115,6 +143,15 @@ pub struct InstalledPack {
     /// Id of the launchable version, e.g. `1.20.1-forge-47.4.10`.
     pub launch_version_id: String,
     pub mod_files: Vec<String>,
+    /// Installs from before this field existed put resource packs in `mods/`.
+    #[serde(default = "legacy_layout")]
+    pub layout: u32,
+}
+
+impl InstalledPack {
+    pub fn needs_repair(&self) -> bool {
+        self.layout < INSTALL_LAYOUT
+    }
 }
 
 #[cfg(test)]

@@ -16,7 +16,8 @@ use crate::application::{
     },
 };
 use crate::domain::{
-    InstallStep, InstalledPack, Progress, merge_descriptors, version::VersionDescriptor,
+    ContentKind, INSTALL_LAYOUT, InstallStep, InstalledPack, Progress, merge_descriptors,
+    version::VersionDescriptor,
 };
 
 const DEFAULT_JAVA_COMPONENT: &str = "java-runtime-gamma";
@@ -136,12 +137,11 @@ impl InstallPackUseCase {
             mods.len() as u64,
             "Descargando mods",
         ));
-        let mods_dir = instance_dir.join("mods");
         let tasks = mods
             .iter()
             .map(|file| DownloadTask {
                 url: file.download_url.clone(),
-                destination: mods_dir.join(&file.file_name),
+                destination: instance_dir.join(file.kind.folder()).join(&file.file_name),
                 sha1: file.sha1.clone(),
                 size: None,
             })
@@ -154,7 +154,11 @@ impl InstallPackUseCase {
             0,
             "Aplicando configuración del pack",
         ));
-        let mod_files: Vec<String> = mods.iter().map(|file| file.file_name.clone()).collect();
+        let mod_files: Vec<String> = mods
+            .iter()
+            .filter(|file| file.kind == ContentKind::Mod)
+            .map(|file| file.file_name.clone())
+            .collect();
         d.storage.prune_mods(&mod_files).await?;
         d.storage
             .apply_overrides(&staging_dir.join("overrides"))
@@ -166,6 +170,7 @@ impl InstallPackUseCase {
                 forge_version: manifest.forge_version.clone(),
                 launch_version_id,
                 mod_files,
+                layout: INSTALL_LAYOUT,
             })
             .await?;
         d.storage.clear_staging().await?;
@@ -243,7 +248,7 @@ mod tests {
                 "read_installed_version:1.20.1-forge-47.4.10",
                 "install_game_files:1.20.1-forge-47.4.10",
                 "download_all:2",
-                "prune_mods:jei.jar,ftb.jar",
+                "prune_mods:jei.jar",
                 "apply_overrides:/staging/overrides",
                 "save_installed_pack",
                 "clear_staging",
@@ -267,11 +272,17 @@ mod tests {
             std::path::PathBuf::from("/instance/mods/jei.jar")
         );
         assert_eq!(downloads[0].sha1.as_deref(), Some("aaa"));
+        assert_eq!(
+            downloads[1].destination,
+            std::path::PathBuf::from("/instance/resourcepacks/fresh-animations.zip"),
+            "resource packs go to their own folder"
+        );
 
         let installed = world.installed().unwrap();
         assert_eq!(installed.version.to_string(), "1.7.2");
         assert_eq!(installed.launch_version_id, "1.20.1-forge-47.4.10");
-        assert_eq!(installed.mod_files, ["jei.jar", "ftb.jar"]);
+        assert_eq!(installed.mod_files, ["jei.jar"]);
+        assert_eq!(installed.layout, INSTALL_LAYOUT);
 
         let events = world.events();
         assert!(

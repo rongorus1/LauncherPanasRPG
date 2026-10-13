@@ -6,7 +6,7 @@ use launcher_core::{
         error::PortError,
         ports::outbound::{PackSource, PortResult},
     },
-    domain::{ModFileRef, PackManifest, PackRelease, PackVersion, ResolvedModFile},
+    domain::{ContentKind, ModFileRef, PackManifest, PackRelease, PackVersion, ResolvedModFile},
 };
 use reqwest::{RequestBuilder, Response, StatusCode};
 use serde::{Deserialize, de::DeserializeOwned};
@@ -24,6 +24,8 @@ const FILES_PAGE_SIZE: u32 = 50;
 const RESOLVE_BATCH: usize = 1000;
 const RELEASE_TYPE_RELEASE: u8 = 1;
 const HASH_ALGO_SHA1: u8 = 1;
+const CLASS_RESOURCE_PACKS: u64 = 12;
+const CLASS_SHADER_PACKS: u64 = 6552;
 const PACK_ARCHIVE: &str = "pack.zip";
 
 /// Reads the pack from the CurseForge Core API.
@@ -66,6 +68,32 @@ impl CurseForgePackSource {
             .map_err(from_reqwest)?;
         let response = check_api_key(response)?;
         read_json(ensure_success(response)?).await
+    }
+
+    /// Mods, resource packs and shader packs share the file endpoints; the project class tells them apart.
+    async fn content_kinds(&self, files: &[ModFileRef]) -> PortResult<HashMap<u64, ContentKind>> {
+        let mut project_ids: Vec<u64> = files.iter().map(|f| f.project_id).collect();
+        project_ids.sort_unstable();
+        project_ids.dedup();
+
+        let mut kinds = HashMap::new();
+        for batch in project_ids.chunks(RESOLVE_BATCH) {
+            let request = self
+                .http
+                .client()
+                .post(format!("{}/mods", self.api_base))
+                .json(&serde_json::json!({ "modIds": batch }));
+            let envelope: Envelope<Vec<CfProject>> = self.call(request).await?;
+            for project in envelope.data {
+                let kind = match project.class_id {
+                    Some(CLASS_RESOURCE_PACKS) => ContentKind::ResourcePack,
+                    Some(CLASS_SHADER_PACKS) => ContentKind::ShaderPack,
+                    _ => ContentKind::Mod,
+                };
+                kinds.insert(project.id, kind);
+            }
+        }
+        Ok(kinds)
     }
 
     async fn file_info(&self, file_id: u64) -> PortResult<CfFile> {
@@ -192,12 +220,18 @@ impl PackSource for CurseForgePackSource {
             found.extend(envelope.data.into_iter().map(|f| (f.id, f)));
         }
 
+        let kinds = self.content_kinds(files).await?;
+
         let mut missing = Vec::new();
         let mut resolved = Vec::with_capacity(files.len());
         for reference in files {
             match found.get(&reference.file_id) {
                 Some(file) => resolved.push(ResolvedModFile {
                     reference: *reference,
+                    kind: kinds
+                        .get(&reference.project_id)
+                        .copied()
+                        .unwrap_or_default(),
                     file_name: file.file_name.clone(),
                     download_url: self.download_url(file),
                     sha1: file.sha1(),
@@ -268,6 +302,14 @@ pub(crate) fn extract_pack(archive_path: &Path, staging: &Path) -> PortResult<Ra
 #[derive(Debug, Deserialize)]
 struct Envelope<T> {
     data: T,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CfProject {
+    id: u64,
+    #[serde(default)]
+    class_id: Option<u64>,
 }
 
 #[derive(Debug, Deserialize)]
