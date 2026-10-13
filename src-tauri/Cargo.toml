@@ -1,6 +1,6 @@
 [package]
 name = "panas-rpg-launcher"
-version = "0.1.0"
+version = "0.1.1"
 description = "Panas RPG offline launcher (Tauri shell: primary adapter and composition root)"
 authors.workspace = true
 license.workspace = true
