@@ -2,7 +2,7 @@ import { Activity, useEffect, useRef, useState, type KeyboardEvent } from "react
 import { useLauncher, useLauncherStore } from "../application/useLauncher";
 import { errorCopy } from "../domain/errors";
 import { AccountDialog } from "./account/AccountDialog";
-import logo from "./assets/logo-64.jpg";
+import logo from "./assets/launcher-mark.png";
 import btn from "./components/Button.module.css";
 import { ErrorPanel } from "./components/ErrorPanel";
 import { ConsolePanel } from "./console/ConsolePanel";
