@@ -2779,7 +2779,7 @@ dependencies = [
 
 [[package]]
 name = "panas-rpg-launcher"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "async-trait",
  "launcher-core",
