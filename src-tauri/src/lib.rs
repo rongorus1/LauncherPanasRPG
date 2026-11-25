@@ -19,6 +19,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::get_device_diagnostics,
+            commands::scan_installation,
+            commands::list_backups,
+            commands::create_backup,
+            commands::restore_backup,
             commands::get_launcher_state,
             commands::save_offline_account,
             commands::save_settings,

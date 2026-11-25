@@ -138,6 +138,22 @@
   min-height: 0;
 }
 
+.navActions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.previewBadge {
+  font: 500 0.6875rem var(--body);
+  color: var(--muted);
+  padding: 4px 6px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+}
+
 .panel {
   height: 100%;
 }

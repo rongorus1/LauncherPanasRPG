@@ -3,6 +3,7 @@
 use async_trait::async_trait;
 
 use crate::application::{
+    diagnostics::{BackupInfo, DeviceDiagnostics, RestoreReport, ScanReport},
     dto::{AccountView, LauncherState, PackStatus},
     error::AppError,
 };
@@ -11,6 +12,15 @@ use crate::domain::{LauncherUpdate, Settings};
 #[async_trait]
 pub trait GetLauncherState: Send + Sync {
     async fn execute(&self) -> Result<LauncherState, AppError>;
+}
+
+#[async_trait]
+pub trait DiagnoseLocalInstallation: Send + Sync {
+    async fn device(&self) -> Result<DeviceDiagnostics, AppError>;
+    async fn scan(&self) -> Result<ScanReport, AppError>;
+    async fn backups(&self) -> Result<Vec<BackupInfo>, AppError>;
+    async fn create_backup(&self) -> Result<BackupInfo, AppError>;
+    async fn restore_backup(&self, id: String) -> Result<RestoreReport, AppError>;
 }
 
 #[async_trait]

@@ -140,6 +140,32 @@
   color: var(--xp);
 }
 
+.profileBox {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--bg-2);
+}
+
+.profileBox h3 { color: var(--ink); font-size: 1.15rem; }
+.profileBox p { margin-top: 6px; }
+.profileInputs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.profileInputs label { display: grid; gap: 7px; color: var(--muted); font-size: .8125rem; }
+.gpuName { display: grid; gap: 7px; max-width: 340px; color: var(--muted); font-size: .8125rem; }
+.profileCards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.profileCard { display: grid; align-content: start; gap: 9px; padding: 14px; border: 1px solid var(--rule); border-radius: var(--r); }
+.profileCard[data-recommended="true"] { border-color: var(--xp); }
+.profileCard strong { color: var(--ink); }
+.profileCard span { color: var(--xp); font-weight: 700; }
+.profileCard small { min-height: 42px; color: var(--muted); line-height: 1.5; }
+.profileHint { font-size: .8125rem; line-height: 1.6; color: var(--muted); }
+
+@media (max-width: 700px) {
+  .profileInputs, .profileCards { grid-template-columns: 1fr; }
+}
+
 .actions {
   display: flex;
   gap: 8px;

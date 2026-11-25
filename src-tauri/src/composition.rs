@@ -7,6 +7,7 @@ use launcher_core::{
         ports::{inbound::*, outbound::*},
         use_cases::{
             ActivityTracker, CheckLauncherUpdateUseCase, CheckPackUpdateUseCase,
+            DiagnoseLocalInstallationUseCase,
             GetLauncherStateUseCase, InstallLauncherUpdateUseCase, InstallPackDeps,
             InstallPackUseCase, PlayGameDeps, PlayGameUseCase, SaveOfflineAccountUseCase,
             SaveSettingsUseCase, StopGameUseCase,
@@ -15,7 +16,7 @@ use launcher_core::{
     domain::{HostEnvironment, launch_plan_builder::HostOs},
 };
 use launcher_infrastructure::{
-    CurseForgePackSource, ForgeLoaderInstaller, FsInstanceStorage, GameProcessRunner, HttpClient,
+    CurseForgePackSource, ForgeLoaderInstaller, FsInstanceStorage, FsLocalDiagnostics, GameProcessRunner, HttpClient,
     JsonAccountRepository, JsonSettingsRepository, MojangJavaProvider, MojangMinecraftSource,
     ParallelDownloader,
 };
@@ -26,6 +27,7 @@ const PACK_PROJECT_ID: u64 = 1_493_979;
 
 /// Inbound ports exposed to the Tauri commands.
 pub struct Services {
+    pub diagnostics: Arc<dyn DiagnoseLocalInstallation>,
     pub get_launcher_state: Arc<dyn GetLauncherState>,
     pub save_offline_account: Arc<dyn SaveOfflineAccount>,
     pub save_settings: Arc<dyn SaveSettings>,
@@ -50,6 +52,7 @@ pub fn build_services(
     let activity = ActivityTracker::new();
 
     let storage: Arc<dyn InstanceStorage> = Arc::new(FsInstanceStorage::new(&data_dir));
+    let diagnostics: Arc<dyn LocalDiagnostics> = Arc::new(FsLocalDiagnostics::new(data_dir.clone()));
     let settings: Arc<dyn SettingsRepository> =
         Arc::new(JsonSettingsRepository::new(data_dir.join("settings.json")));
     let accounts: Arc<dyn AccountRepository> =
@@ -67,6 +70,7 @@ pub fn build_services(
     let game: Arc<dyn GameProcess> = Arc::new(GameProcessRunner::new());
 
     Ok(Services {
+        diagnostics: Arc::new(DiagnoseLocalInstallationUseCase::new(diagnostics, activity.clone())),
         get_launcher_state: Arc::new(GetLauncherStateUseCase::new(
             accounts.clone(),
             settings.clone(),

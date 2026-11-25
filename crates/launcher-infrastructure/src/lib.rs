@@ -2,6 +2,7 @@
 
 pub mod curseforge;
 pub mod download;
+pub mod diagnostics;
 mod error;
 pub mod forge;
 mod fs_util;
@@ -14,6 +15,7 @@ pub mod storage;
 
 pub use curseforge::CurseForgePackSource;
 pub use download::ParallelDownloader;
+pub use diagnostics::FsLocalDiagnostics;
 pub use forge::ForgeLoaderInstaller;
 pub use http::HttpClient;
 pub use java::MojangJavaProvider;

@@ -1,4 +1,5 @@
 pub mod dto;
+pub mod diagnostics;
 pub mod error;
 pub mod events;
 pub mod ports;

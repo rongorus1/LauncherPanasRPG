@@ -4,6 +4,7 @@
 mod activity;
 mod check_launcher_update;
 mod check_pack_update;
+mod diagnose_local_installation;
 mod get_launcher_state;
 mod install_launcher_update;
 mod install_pack;
@@ -19,6 +20,7 @@ pub(crate) mod testing;
 pub use activity::{ActivityGuard, ActivityTracker};
 pub use check_launcher_update::CheckLauncherUpdateUseCase;
 pub use check_pack_update::CheckPackUpdateUseCase;
+pub use diagnose_local_installation::DiagnoseLocalInstallationUseCase;
 pub use get_launcher_state::GetLauncherStateUseCase;
 pub use install_launcher_update::InstallLauncherUpdateUseCase;
 pub use install_pack::{InstallPackDeps, InstallPackUseCase};

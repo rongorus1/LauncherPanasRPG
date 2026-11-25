@@ -9,6 +9,7 @@ use std::{
 use async_trait::async_trait;
 
 use crate::application::{
+    diagnostics::{BackupInfo, DeviceDiagnostics, RestoreReport, ScanReport},
     error::PortError,
     events::{LauncherEvent, LogStream},
 };
@@ -18,6 +19,15 @@ use crate::domain::{
 };
 
 pub type PortResult<T> = Result<T, PortError>;
+
+#[async_trait]
+pub trait LocalDiagnostics: Send + Sync {
+    async fn device(&self) -> PortResult<DeviceDiagnostics>;
+    async fn scan(&self) -> PortResult<ScanReport>;
+    async fn backups(&self) -> PortResult<Vec<BackupInfo>>;
+    async fn create_backup(&self) -> PortResult<BackupInfo>;
+    async fn restore_backup(&self, id: String) -> PortResult<RestoreReport>;
+}
 
 /// Where the pack is published (CurseForge).
 #[async_trait]

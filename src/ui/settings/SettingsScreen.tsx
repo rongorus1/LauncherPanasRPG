@@ -1,5 +1,6 @@
-import { useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
 import { useLauncher, useLauncherStore } from "../../application/useLauncher";
+import { deviceDiagnostics } from "../../application/deviceDiagnostics";
 import { errorCopy } from "../../domain/errors";
 import {
   MEMORY_MIN_MB,
@@ -38,10 +39,57 @@ function SettingsForm({ saved }: { saved: Settings }) {
   const [submitted, setSubmitted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<Status>({ type: "idle" });
+  const [totalRam, setTotalRam] = useState("");
+  const [processor, setProcessor] = useState("");
+  const [graphics, setGraphics] = useState<"integrated" | "dedicated" | "unknown">("unknown");
+  const [gpuName, setGpuName] = useState("");
+  const [profileMessage, setProfileMessage] = useState("");
+  const [hardwareMessage, setHardwareMessage] = useState("Introduce los datos de tu equipo.");
+
+  useEffect(() => {
+    let active = true;
+    void deviceDiagnostics().then(info => {
+      if (!active || !info) return;
+      if (info.total_memory_gb) setTotalRam(String(info.total_memory_gb));
+      if (info.processor_name) setProcessor(info.processor_name);
+      const gpu = info.gpu_names.find(name => /nvidia|geforce|radeon\s+rx/i.test(name));
+      if (gpu) { setGraphics("dedicated"); setGpuName(gpu); }
+      else if (info.gpu_names.length) setGraphics("integrated");
+      setHardwareMessage("Hardware leído localmente. Revisa los datos antes de aplicar un perfil.");
+    }).catch(() => { if (active) setHardwareMessage("No se pudo leer el hardware automáticamente. Puedes introducirlo manualmente."); });
+    return () => { active = false; };
+  }, []);
 
   const candidate = useMemo(() => fromDraft(draft), [draft]);
   const errors = useMemo(() => validateSettings(candidate), [candidate]);
   const dirty = !settingsEqual(candidate, saved);
+  const ramTotal = Number(totalRam);
+  const cpu = processor.toLowerCase();
+  const intelGeneration = Number(cpu.match(/(?:core\s*i[3579]-?)(\d{4,5})/)?.[1]?.slice(0, -3) ?? 0);
+  const ryzenGeneration = Number(cpu.match(/ryzen\s*[3579]\s*(\d{4})/)?.[1]?.[0] ?? 0);
+  const recentCpu = intelGeneration >= 10 || ryzenGeneration >= 3 || /core\s*ultra/.test(cpu);
+  const cpuTier = recentCpu && /ryzen\s*[79]|core\s*i[79]|core\s*ultra\s*[79]/.test(cpu) ? "high"
+    : recentCpu || /ryzen\s*5|core\s*i5/.test(cpu) ? "balanced" : "modest";
+  const gpu = gpuName.toLowerCase();
+  const gpuTier = /rtx\s*[345]\d{3}|rx\s*[679]\d{3}|arc\s*b[57]/.test(gpu) ? "high"
+    : /gtx\s*1[06]\d{2}|rx\s*[45]\d{3}|rtx\s*20\d{2}/.test(gpu) ? "balanced" : "unknown";
+  const reserve = ramTotal >= 16 ? 5 : 4;
+  const available = Number.isFinite(ramTotal) ? Math.max(0, ramTotal - reserve) : 0;
+  const hasHardwareData = Number.isFinite(ramTotal) && ramTotal >= 2 && processor.trim().length >= 3;
+  const recommendedTier = !hasHardwareData || available < 6 ? null : available < 8 || cpuTier === "modest"
+    ? "modest"
+    : cpuTier === "high" && available >= 10 && ramTotal >= 16 && graphics === "dedicated" && gpuTier === "high" ? "high" : "balanced";
+  const tiers = [
+    { id: "modest", name: "Equipo modesto", target: 6, detail: "Mínimo basado en el pico observado de 5,8 GB; cierra otras aplicaciones." },
+    { id: "balanced", name: "Equilibrado", target: 8, detail: "Más margen para zonas cargadas y sesiones largas." },
+    { id: "high", name: "Gama alta", target: 10, detail: "Más margen sin ocupar toda la RAM del equipo." },
+  ] as const;
+  function applyTier(target: number) {
+    if (available < target) { setProfileMessage("La RAM disponible no alcanza para este perfil y para reservar memoria al sistema."); return; }
+    update("maxGb", formatDecimal(target));
+    update("minGb", "3");
+    setProfileMessage(`Propuesta ${formatDecimal(target)} GB máximo y 3 GB iniciales. Revisa y guarda los ajustes para aplicarla.`);
+  }
 
   const visible: SettingsErrors = {};
   for (const key of Object.keys(errors) as SettingsField[]) {
@@ -89,6 +137,24 @@ function SettingsForm({ saved }: { saved: Settings }) {
 
           <section className={styles.section} aria-labelledby="mem-title">
             <h2 id="mem-title">Memoria</h2>
+            <div className={styles.profileBox}>
+              <div><h3>Perfil recomendado para tu equipo</h3><p>{hardwareMessage}</p></div>
+              <div className={styles.profileInputs}>
+                <label>Total de RAM (GB)<input className={field.input} type="number" min="2" max="256" step="0.5" value={totalRam} onChange={e => { setTotalRam(e.target.value); setProfileMessage(""); }} /></label>
+                <label>Procesador actual<input className={field.input} type="text" value={processor} placeholder="Ej. Ryzen 5 5600X" onChange={e => { setProcessor(e.target.value); setProfileMessage(""); }} /></label>
+                <label>Gráficos<select className={field.input} value={graphics} onChange={e => { setGraphics(e.target.value as typeof graphics); setProfileMessage(""); }}><option value="unknown">No sé / no indicado</option><option value="integrated">Integrados</option><option value="dedicated">Tarjeta dedicada</option></select></label>
+              </div>
+              {graphics === "dedicated" && <label className={styles.gpuName}>Nombre de la GPU dedicada<input className={field.input} type="text" value={gpuName} placeholder="Ej. GeForce RTX 3060" onChange={e => { setGpuName(e.target.value); setProfileMessage(""); }} /></label>}
+              <p className={styles.profileHint}>{recommendedTier ? <>Recomendación: <strong>{tiers.find(t => t.id === recommendedTier)?.name}</strong>. Se reservan {reserve} GB para Windows y otras aplicaciones; {graphics === "integrated" ? "con gráficos integrados, usa ajustes visuales conservadores dentro del juego." : graphics === "dedicated" ? `GPU indicada: ${gpuName.trim() || "sin nombre"}. El perfil no cambia la configuración visual del juego.` : "sin datos de GPU, la recomendación se limita a memoria y procesador."}</> : hasHardwareData ? "No hay RAM suficiente para reservar memoria al sistema y cubrir el pico observado de 5,8 GB. Puedes ajustar la memoria manualmente, con riesgo de cierres por falta de memoria." : "Completa la RAM total y el procesador actual para estimar un perfil. La clasificación por nombre es orientativa."}</p>
+              <div className={styles.profileCards}>{tiers.map(tier => {
+                const canApply = hasHardwareData && available >= tier.target;
+                return <article key={tier.id} className={styles.profileCard} data-recommended={tier.id === recommendedTier || undefined}>
+                  <strong>{tier.name}{tier.id === recommendedTier ? " · sugerido" : ""}</strong><span>{!hasHardwareData ? "Completa los datos" : canApply ? `${formatDecimal(tier.target)} GB máximo` : "RAM insuficiente"}</span><small>{tier.detail}</small>
+                  <button type="button" className={`${btn.btn} ${btn.outline}`} disabled={!canApply} onClick={() => applyTier(tier.target)}>Usar perfil</button>
+                </article>;
+              })}</div>
+              <p className={styles.profileHint} role="status">{profileMessage || (hasHardwareData ? `Margen estimado tras reservar para el sistema: ${formatDecimal(available)} GB. Perfiles basados en un pico de RAM de 5,8 GB comunicado para Panas RPG. Aplicar cambia solo la memoria; CPU y GPU orientan la elección.` : "Introduce los datos para preparar una recomendación de RAM.")}</p>
+            </div>
             <div className={field.field}>
               <label className={field.label} htmlFor="max-mem">
                 Memoria máxima
@@ -187,7 +253,7 @@ function SettingsForm({ saved }: { saved: Settings }) {
                 aria-describedby="jvm-args-hint"
               />
               <p id="jvm-args-hint" className={field.hint}>
-                Separados por espacios. Si no sabes qué poner, déjalo vacío.
+                Recomendado para los tres perfiles: dejarlo vacío. Java 17 ya usa G1; la memoria mínima y máxima se configuran arriba. Añade opciones avanzadas solo si has medido una mejora en tu equipo.
               </p>
             </div>
           </section>

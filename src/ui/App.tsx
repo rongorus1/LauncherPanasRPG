@@ -7,19 +7,23 @@ import btn from "./components/Button.module.css";
 import { ErrorPanel } from "./components/ErrorPanel";
 import { ConsolePanel } from "./console/ConsolePanel";
 import { HomeScreen } from "./home/HomeScreen";
+import { HelpScreen } from "./help/HelpScreen";
+import { DiscordLink } from "./help/DiscordLink";
+import { ProjectLinks } from "./help/ProjectLinks";
 import { ArrowClockwiseIcon, UserIcon } from "./icons";
 import { SettingsScreen } from "./settings/SettingsScreen";
 import styles from "./App.module.css";
 
-type Tab = "home" | "settings" | "console";
+type Tab = "home" | "settings" | "console" | "help";
 
 const TABS: ReadonlyArray<{ id: Tab; label: string }> = [
   { id: "home", label: "Inicio" },
   { id: "settings", label: "Ajustes" },
   { id: "console", label: "Consola" },
+  { id: "help", label: "Ayuda" },
 ];
 
-export function App() {
+export function App({ preview = false }: { preview?: boolean }) {
   const store = useLauncherStore();
   const phase = useLauncher((s) => s.phase);
   const [tab, setTab] = useState<Tab>("home");
@@ -29,9 +33,9 @@ export function App() {
 
   return (
     <div className={styles.shell}>
-      <NavBar tab={tab} onTab={setTab} onOpenAccount={() => setAccountOpen(true)} />
+      <NavBar tab={tab} onTab={setTab} onOpenAccount={() => setAccountOpen(true)} preview={preview} />
       <main className={styles.main}>
-        {phase === "failed" ? (
+        {phase === "failed" && tab !== "help" && tab !== "console" ? (
           <LoadFailed />
         ) : (
           TABS.map(({ id }) => (
@@ -48,6 +52,8 @@ export function App() {
                   <HomeScreen onOpenConsole={() => setTab("console")} onOpenAccount={() => setAccountOpen(true)} />
                 ) : id === "settings" ? (
                   phase === "ready" ? <SettingsScreen /> : null
+                ) : id === "help" ? (
+                  <HelpScreen onOpenSettings={() => setTab("settings")} onOpenConsole={() => setTab("console")} preview={preview} />
                 ) : (
                   <div className={styles.consoleScreen}>
                     <ConsolePanel variant="full" />
@@ -64,12 +70,13 @@ export function App() {
 }
 
 interface NavProps {
+  preview: boolean;
   tab: Tab;
   onTab: (tab: Tab) => void;
   onOpenAccount: () => void;
 }
 
-function NavBar({ tab, onTab, onOpenAccount }: NavProps) {
+function NavBar({ tab, onTab, onOpenAccount, preview }: NavProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const playing = useLauncher((s) => s.launcher?.activity === "playing");
 
@@ -91,6 +98,7 @@ function NavBar({ tab, onTab, onOpenAccount }: NavProps) {
       <div className={styles.brand}>
         <img src={logo} alt="" width={32} height={32} />
         <span>Panas RPG</span>
+        {preview ? <small className={styles.previewBadge}>Prueba</small> : null}
       </div>
       <div ref={listRef} role="tablist" aria-label="Secciones" className={styles.tabs} onKeyDown={onKeyDown}>
         {TABS.map(({ id, label }) => (
@@ -110,7 +118,7 @@ function NavBar({ tab, onTab, onOpenAccount }: NavProps) {
           </button>
         ))}
       </div>
-      <AccountChip onOpen={onOpenAccount} />
+      <div className={styles.navActions}><ProjectLinks /><DiscordLink /><AccountChip onOpen={onOpenAccount} /></div>
     </header>
   );
 }
