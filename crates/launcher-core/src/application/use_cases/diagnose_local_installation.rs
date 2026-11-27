@@ -17,7 +17,10 @@ pub struct DiagnoseLocalInstallationUseCase {
 
 impl DiagnoseLocalInstallationUseCase {
     pub fn new(diagnostics: Arc<dyn LocalDiagnostics>, activity: ActivityTracker) -> Self {
-        Self { diagnostics, activity }
+        Self {
+            diagnostics,
+            activity,
+        }
     }
 }
 

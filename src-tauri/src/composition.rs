@@ -7,18 +7,17 @@ use launcher_core::{
         ports::{inbound::*, outbound::*},
         use_cases::{
             ActivityTracker, CheckLauncherUpdateUseCase, CheckPackUpdateUseCase,
-            DiagnoseLocalInstallationUseCase,
-            GetLauncherStateUseCase, InstallLauncherUpdateUseCase, InstallPackDeps,
-            InstallPackUseCase, PlayGameDeps, PlayGameUseCase, SaveOfflineAccountUseCase,
-            SaveSettingsUseCase, StopGameUseCase,
+            DiagnoseLocalInstallationUseCase, GetLauncherStateUseCase,
+            InstallLauncherUpdateUseCase, InstallPackDeps, InstallPackUseCase, PlayGameDeps,
+            PlayGameUseCase, SaveOfflineAccountUseCase, SaveSettingsUseCase, StopGameUseCase,
         },
     },
     domain::{HostEnvironment, launch_plan_builder::HostOs},
 };
 use launcher_infrastructure::{
-    CurseForgePackSource, ForgeLoaderInstaller, FsInstanceStorage, FsLocalDiagnostics, GameProcessRunner, HttpClient,
-    JsonAccountRepository, JsonSettingsRepository, MojangJavaProvider, MojangMinecraftSource,
-    ParallelDownloader,
+    CurseForgePackSource, ForgeLoaderInstaller, FsInstanceStorage, FsLocalDiagnostics,
+    GameProcessRunner, HttpClient, JsonAccountRepository, JsonSettingsRepository,
+    MojangJavaProvider, MojangMinecraftSource, ParallelDownloader,
 };
 
 use crate::adapters::outbound::{TauriEventPublisher, TauriLauncherUpdater};
@@ -52,7 +51,8 @@ pub fn build_services(
     let activity = ActivityTracker::new();
 
     let storage: Arc<dyn InstanceStorage> = Arc::new(FsInstanceStorage::new(&data_dir));
-    let diagnostics: Arc<dyn LocalDiagnostics> = Arc::new(FsLocalDiagnostics::new(data_dir.clone()));
+    let diagnostics: Arc<dyn LocalDiagnostics> =
+        Arc::new(FsLocalDiagnostics::new(data_dir.clone()));
     let settings: Arc<dyn SettingsRepository> =
         Arc::new(JsonSettingsRepository::new(data_dir.join("settings.json")));
     let accounts: Arc<dyn AccountRepository> =
@@ -70,7 +70,10 @@ pub fn build_services(
     let game: Arc<dyn GameProcess> = Arc::new(GameProcessRunner::new());
 
     Ok(Services {
-        diagnostics: Arc::new(DiagnoseLocalInstallationUseCase::new(diagnostics, activity.clone())),
+        diagnostics: Arc::new(DiagnoseLocalInstallationUseCase::new(
+            diagnostics,
+            activity.clone(),
+        )),
         get_launcher_state: Arc::new(GetLauncherStateUseCase::new(
             accounts.clone(),
             settings.clone(),

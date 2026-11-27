@@ -1,7 +1,7 @@
 use launcher_core::{
     application::{
-        dto::{AccountView, LauncherState, PackStatus},
         diagnostics::{BackupInfo, DeviceDiagnostics, RestoreReport, ScanReport},
+        dto::{AccountView, LauncherState, PackStatus},
         error::AppError,
     },
     domain::{LauncherUpdate, Settings},
@@ -11,7 +11,9 @@ use tauri::State;
 use crate::composition::Services;
 
 #[tauri::command]
-pub async fn get_device_diagnostics(services: State<'_, Services>) -> Result<DeviceDiagnostics, AppError> {
+pub async fn get_device_diagnostics(
+    services: State<'_, Services>,
+) -> Result<DeviceDiagnostics, AppError> {
     services.diagnostics.device().await
 }
 
@@ -31,7 +33,10 @@ pub async fn create_backup(services: State<'_, Services>) -> Result<BackupInfo, 
 }
 
 #[tauri::command]
-pub async fn restore_backup(services: State<'_, Services>, id: String) -> Result<RestoreReport, AppError> {
+pub async fn restore_backup(
+    services: State<'_, Services>,
+    id: String,
+) -> Result<RestoreReport, AppError> {
     services.diagnostics.restore_backup(id).await
 }
 
